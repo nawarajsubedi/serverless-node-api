@@ -1,0 +1,17 @@
+{
+  "name": "serverless-node-api",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "serverless offline --stage dev",
+    "deploy": "serverless deploy --stage prod --region ap-northeast-1"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "serverless-offline": "^13.8.0",
+    "serverless-dotenv-plugin": "^6.0.0"
+  }
+}
