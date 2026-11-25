@@ -1,76 +1,95 @@
-<!--
-title: 'Serverless Framework Node Express API on AWS'
-description: 'This template demonstrates how to develop and deploy a simple Node Express API running on AWS Lambda using the Serverless Framework.'
-layout: Doc
-framework: v4
-platform: AWS
-language: nodeJS
-priority: 1
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, Inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+# Serverless Node Express API
 
-# Serverless Framework Node Express API on AWS
+A small **Express** API deployed to **AWS Lambda** with the **Serverless Framework (v3)**.
+`serverless-http` wraps the Express app, so all routing happens in Express.
 
-This template demonstrates how to develop and deploy a simple Node Express API service running on AWS Lambda using the Serverless Framework.
+| Method | Path | Response |
+|---|---|---|
+| GET | `/` | `{"message":"Hello from root!"}` |
+| GET | `/hello` | `{"message":"Hello from path!"}` |
+| any | anything else | `404 {"error":"Not Found"}` |
 
-This template configures a single function, `api`, which is responsible for handling all incoming requests using the `httpApi` event. To learn more about `httpApi` event configuration options, please refer to [httpApi event docs](https://www.serverless.com/framework/docs/providers/aws/events/http-api/). As the event is configured in a way to accept all incoming requests, the Express.js framework is responsible for routing and handling requests internally. This implementation uses the `serverless-http` package to transform the incoming event request payloads to payloads compatible with Express.js. To learn more about `serverless-http`, please refer to the [serverless-http README](https://github.com/dougmoscrop/serverless-http).
+## Tech stack
 
-## Usage
+- Node.js + Express 4
+- `serverless-http`
+- Serverless Framework 3 with `serverless-offline` (local) and `serverless-dotenv-plugin`
+- AWS Lambda (`nodejs20.x`) + HTTP API
 
-### Deployment
+## Requirements
 
-Install dependencies with:
+| Requirement | Version | Notes |
+|---|---|---|
+| **OS** | **Linux** (Ubuntu / Debian) | Use Linux to install, run and deploy. On Windows, use WSL 2 (Ubuntu); see [Other operating systems](#other-operating-systems) |
+| Node.js | 20.17 or newer | Matches the Lambda runtime (`nodejs20.x`). Tested on 20 and 26. Install with [nvm](https://github.com/nvm-sh/nvm): `nvm install 20` |
+| npm | Comes with Node.js | |
+| AWS account + credentials | Only for deploying | Not needed to run locally |
 
-```
-npm install
-```
+Serverless Framework v3 is installed locally by `npm ci`; you don't need a global `serverless` install.
 
-and then deploy with:
+### Tested on
 
-```
-serverless deploy
-```
+| OS | Node.js | Result |
+|---|---|---|
+| **Linux** (Debian 12, Docker `node:20`) | 20.20 | `npm run dev` serves both routes ✅ |
+| macOS 26 (Apple Silicon) | 26.12 | `npm run dev` serves both routes ✅ |
 
-After running deploy, you should see output similar to:
+## Run locally
 
-```
-Deploying "aws-node-express-api" to stage "dev" (us-east-1)
-
-✔ Service deployed to stack aws-node-express-api-dev (96s)
-
-endpoint: ANY - https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
-functions:
-  api: aws-node-express-api-dev-api (2.3 kB)
+```bash
+git clone https://github.com/nawarajsubedi/serverless-node-api.git
+cd serverless-node-api
+npm ci
+npm run dev
 ```
 
-_Note_: In current form, after deployment, your API is public and can be invoked by anyone. For production deployments, you might want to configure an authorizer. For details on how to do that, refer to [`httpApi` event docs](https://www.serverless.com/framework/docs/providers/aws/events/http-api/).
+The API is available at <http://localhost:3000>:
 
-### Invocation
-
-After successful deployment, you can call the created application via HTTP:
-
-```
-curl https://xxxxxxx.execute-api.us-east-1.amazonaws.com/
+```bash
+curl http://localhost:3000/hello
+# {"message":"Hello from path!"}
 ```
 
-Which should result in the following response:
+`serverless-offline` also opens port 3002 for local Lambda invocation. Running locally needs no AWS credentials and no Serverless login.
 
-```json
-{ "message": "Hello from root!" }
+### Environment variables (optional)
+
+`serverless-dotenv-plugin` loads a `.env` file from the project root if there is one.
+The message `DOTENV: Could not find .env file.` is harmless.
+
+## Deploy to AWS
+
+```bash
+npm run deploy       # serverless deploy --stage prod --region ap-northeast-1
 ```
 
-### Local development
+To deploy you need:
 
-The easiest way to develop and test your function is to use the `dev` command:
+1. AWS credentials, for example from `aws configure` or the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment variables.
+2. A Serverless Framework login, because `serverless.yml` sets `org` and `app`: `npx serverless login`.
+   To deploy without the Serverless Dashboard, remove the `org:` and `app:` lines from `serverless.yml`.
+
+After deploying, the output shows the HTTP API URL.
+
+## Other operating systems
+
+The supported OS is **Linux**. The commands above were written and tested for a Linux shell.
+
+- **Windows**: install [WSL 2](https://learn.microsoft.com/windows/wsl/install) with Ubuntu, open the Ubuntu terminal, and follow the Linux steps exactly.
+- **macOS**: the same commands work in Terminal (tested on macOS 26).
+
+## Project structure
 
 ```
-serverless dev
+handler.js        Express app wrapped with serverless-http
+serverless.yml    Service, provider (aws, nodejs20.x), function and plugins
 ```
 
-This will start a local emulator of AWS Lambda and tunnel your requests to and from AWS Lambda, allowing you to interact with your function as if it were running in the cloud.
+## Troubleshooting
 
-Now you can invoke the function as before, but this time the function will be executed locally. Now you can develop your function locally, invoke it, and see the results immediately without having to re-deploy.
-
-When you are done developing, don't forget to run `serverless deploy` to deploy the function to the cloud.
+- **`TypeError: Cannot redefine property: _serverlessExternalPluginName`**: Serverless v3 can't load the ESM-only
+  `serverless-offline` plugin on newer Node versions (Node 20.19+ and 22.12+ load ESM through `require`).
+  `npm run dev` already passes `--no-experimental-require-module` to fix this.
+  If you call `serverless offline` directly, run it as
+  `node --no-experimental-require-module node_modules/serverless/bin/serverless.js offline`.
+- **`EADDRINUSE` on port 3000**: another app is using the port. Use `npm run dev -- --httpPort 4000`.

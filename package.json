@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "serverless offline --stage dev",
+    "dev": "node --no-experimental-require-module node_modules/serverless/bin/serverless.js offline --stage dev",
     "deploy": "serverless deploy --stage prod --region ap-northeast-1"
   },
   "dependencies": {
